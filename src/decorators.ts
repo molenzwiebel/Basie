@@ -1,4 +1,4 @@
-import { BasiePrototype, Basie, B } from "./Types";
+import { BasiePrototype, Basie, B } from "./types";
 
 // Polyfill the decorator metadata types if enabled and no reflect-metadata.
 const types: Map<{}, Map<string, Function>> = new Map();

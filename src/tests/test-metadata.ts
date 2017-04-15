@@ -233,7 +233,7 @@ class WithMetadata {
         const noArgs = await UserModel.where();
         expect(noArgs.length).to.be.above(0);
 
-        const noArgs2 = await UserModel.where([]);
+        const noArgs2 = await UserModel.where({});
         expect(noArgs2.length).to.be.above(0);
 
         let ret = await UserModel.where({ name: "Thijs" });
