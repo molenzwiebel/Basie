@@ -122,6 +122,14 @@ class WithMetadata {
     }
 
     @test
+    "with no fields"() {
+        abstract class Foo extends Basie {}
+        const FooModel = Based(Foo);
+
+        return FooModel.createTable(); // this should not fail.
+    }
+
+    @test
     async "save"() {
         await UserModel.createTable();
         await RoleModel.createTable();
@@ -162,6 +170,9 @@ class WithMetadata {
         expect(await UserModel.all()).to.have.length(1);
         await (await UserModel.first())!.destroy();
         expect(await UserModel.all()).to.have.length(0);
+
+        const newUser = new UserModel();
+        await newUser.destroy(); // no-op
     }
 
     @test
@@ -200,6 +211,12 @@ class WithMetadata {
     async "findBy"() {
         await User.setup();
 
+        const noArgs = await UserModel.findBy();
+        expect(noArgs).to.not.equal(undefined);
+
+        const noArgs2 = await UserModel.findBy({});
+        expect(noArgs2).to.not.equal(undefined);
+
         const ret = await UserModel.findBy({ name: "Thijs" });
         expect(ret).to.not.equal(undefined);
         expect(ret!.name).to.equal("Thijs");
@@ -212,6 +229,12 @@ class WithMetadata {
     @test
     async "where"() {
         await User.setup();
+
+        const noArgs = await UserModel.where();
+        expect(noArgs.length).to.be.above(0);
+
+        const noArgs2 = await UserModel.where([]);
+        expect(noArgs2.length).to.be.above(0);
 
         let ret = await UserModel.where({ name: "Thijs" });
         expect(ret).to.have.length(1);
@@ -244,6 +267,17 @@ class WithMetadata {
     }
 
     @test
+    async "throws on ID modification"() {
+        await User.setup();
+
+        // Cast to any is needed for the readonly to disappear.
+        const user: any = await UserModel.first();
+        expect(() => {
+            user.id = 10;
+        }).to.throw("Cannot manually set the ID");
+    }
+
+    @test
     async "throws on children modification"() {
         await User.setup();
         await Role.addRole((await UserModel.first())!, "Test Role");
@@ -271,6 +305,10 @@ class WithMetadata {
         }).to.throw("This object was deleted");
 
         expect(() => {
+            user.destroy();
+        }).to.throw("This object was deleted");
+
+        expect(() => {
             user.id;
         }).to.throw("This object was deleted");
 
@@ -281,6 +319,31 @@ class WithMetadata {
         expect(() => {
             user.name = "Foo";
         }).to.throw("This object was deleted");
+
+        expect(() => {
+            user.roles;
+        }).to.throw("This object was deleted");
+    }
+
+    @test
+    async "booleans are stored as numbers"() {
+        abstract class Foo extends Basie {
+            @field
+            value: boolean;
+        }
+        const FooModel = Based(Foo);
+        await FooModel.createTable();
+
+        const x = new FooModel();
+        x.value = true;
+        await x.save();
+
+        const val = (await FooModel.first())!;
+        expect(val).to.not.equal(undefined);
+        expect(val!.value).to.equal(1);
+
+        val!.value = false;
+        expect(val!.value).to.equal(0);
     }
 
     @test

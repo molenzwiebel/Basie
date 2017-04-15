@@ -55,13 +55,13 @@ export type BasieClassType<T extends Basie> = {
      * User.findBy({ age: 20, name: "John" }) // first user with both age 20 and name John
      * User.findBy({ name: "John%" }) // first user whose name is "John%" (no wildcards!)
      */
-    findBy(params: Partial<T>): Promise<T | undefined>;
+    findBy(params?: Partial<T>): Promise<T | undefined>;
 
     /**
      * Acts the same as {@link findBy}, but returns all matching documents instead of
      * only the first. If only a single document is needed, findBy should be preferred.
      */
-    where(params: Partial<T>): Promise<T[]>;
+    where(params?: Partial<T>): Promise<T[]>;
 
     /**
      * Finds all documents where the specified literal WHERE clause matches. Placeholders in
@@ -74,7 +74,17 @@ export type BasieClassType<T extends Basie> = {
      */
     where(query: string, ...args: any[]): Promise<T[]>;
 
+    /**
+     * Returns the number of rows that match the specified partial predicate. Will return the
+     * total number of rows if no params or an empty object is used.
+     */
     count(params?: Partial<T>): Promise<number>;
+
+    /**
+     * Returns the number of rows that match the specified WHERE clause. Placeholders in
+     * the form of `?` can be used to perform escaping. Any additional arguments will be used
+     * where wildcards were specified.
+     */
     count(query: string, ...args: any[]): Promise<number>;
 };
 

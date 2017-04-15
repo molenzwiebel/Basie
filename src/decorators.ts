@@ -16,6 +16,7 @@ if (typeof Reflect !== "undefined" && !(<any>Reflect).metadata) {
 // Uses the reflect-metadata API if available, otherwise looks up the type in the polyfill map.
 // Returns undefined if there is no type, or if decorator metadata is disabled.
 function getType(proto: any, fieldName: string): Function | undefined {
+    /* istanbul ignore if: We test without reflect-metadata */
     if (typeof Reflect !== "undefined" && (<any>Reflect).getMetadata)
         return (<any>Reflect).getMetadata("design:type", proto, fieldName);
     

@@ -2,8 +2,15 @@ import { Database, verbose } from "sqlite3";
 verbose();
 
 export class DatabaseConnection {
-    private isConnected = false;
+    private _isConnected = false;
     private connection: Database | null = null;
+
+    /**
+     * @returns if the database is currently connected and opened
+     */
+    get isConnected() {
+        return this._isConnected;
+    }
 
     /**
      * Connects to the specified database path. This file is created
@@ -15,9 +22,10 @@ export class DatabaseConnection {
 
         return new Promise<void>((resolve, reject) => {
             this.connection = new Database(path, (err) => {
+                /* istanbul ignore if: No way to cause this to error, unless the filesystem is not writable or something. */
                 if (err) return reject(err);
 
-                this.isConnected = true;
+                this._isConnected = true;
                 resolve();
             });
         });
@@ -32,7 +40,7 @@ export class DatabaseConnection {
         return new Promise<void>(resolve => {
             this.connection!.close(() => {
                 this.connection = null;
-                this.isConnected = false;
+                this._isConnected = false;
                 resolve();
             });
         });
@@ -49,7 +57,7 @@ export class DatabaseConnection {
         if (!this.isConnected) throw new Error("Not connected.");
 
         return new Promise<void>((resolve, reject) => {
-            this.connection!.run(query, params || [], err => {
+            this.connection!.run(query, params, err => {
                 err ? reject(err) : resolve();
             });
         });
@@ -64,7 +72,7 @@ export class DatabaseConnection {
         if (!this.isConnected) throw new Error("Not connected.");
 
         return new Promise<T | undefined>((resolve, reject) => {
-            this.connection!.get(query, params || [], (err, row) => {
+            this.connection!.get(query, params, (err, row) => {
                 err ? reject(err) : resolve(row);
             });
         });
@@ -79,7 +87,7 @@ export class DatabaseConnection {
         if (!this.isConnected) throw new Error("Not connected.");
 
         return new Promise<T[] | undefined>((resolve, reject) => {
-            this.connection!.all(query, params || [], (err, row) => {
+            this.connection!.all(query, params, (err, row) => {
                 err ? reject(err) : resolve(row);
             });
         });

@@ -66,7 +66,7 @@ export function Based<Template extends Basie>(Base: AbstractConstructor<Template
                 return n + " " + type + " NOT NULL"; // all fields should be non-null.
             }, ", ");
 
-            return Database.run(`CREATE TABLE IF NOT EXISTS ${tableName} (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, ${syntax})`);
+            return Database.run(`CREATE TABLE IF NOT EXISTS ${tableName} (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE${declaredFields.length > 0 ? ", " : ""} ${syntax})`);
         }
 
         static dropTable(): Promise<void> {
@@ -85,25 +85,25 @@ export function Based<Template extends Basie>(Base: AbstractConstructor<Template
             return Database.all(`SELECT * FROM ${tableName}`).then(x => Promise.all(x.map(BasieClass.materialize)));
         }
 
-        static findBy(params: Partial<Template>): Promise<Template | undefined> {
-            const columns = toColumnNames(params);
+        static findBy(params: (Partial<Template> | undefined)): Promise<Template | undefined> {
+            const columns = params ? toColumnNames(params) : [];
             return Database.get(
                 `SELECT * FROM ${tableName} ${columns.length > 0 ? 'WHERE' : ''} ${columns.map(x => x[1] + " = ?").join(" AND ")} LIMIT 1`,
-                columns.map(x => params[x[0]])
+                columns.map(x => params![x[0]])
             ).then(x => x && BasieClass.materialize(x));
         }
 
-        static where(params: Partial<Template> | string, ...args: any[]): Promise<Template[]> {
+        static where(params: (Partial<Template> | undefined) | string, ...args: any[]): Promise<Template[]> {
             // Simple where clause.
             if (typeof params === "string") {
                 return Database.all(`SELECT * FROM ${tableName} WHERE ${params}`, args).then(x => Promise.all(x.map(BasieClass.materialize)));
             }
 
             // Partial
-            const columns = toColumnNames(params);
+            const columns = params ? toColumnNames(params) : [];
             return Database.all(
                 `SELECT * FROM ${tableName} ${columns.length > 0 ? 'WHERE' : ''} ${columns.map(x => x[1] + " = ?").join(" AND ")}`,
-                columns.map(x => params[x[0]])
+                columns.map(x => params![x[0]])
             ).then(x => Promise.all(x.map(BasieClass.materialize)));
         }
 
@@ -181,15 +181,16 @@ export function Based<Template extends Basie>(Base: AbstractConstructor<Template
             }
         }
 
-        async destroy(): Promise<void> {
+        destroy(): Promise<void> {
             if (this.__poisoned) throw new Error("This object was deleted and can no longer be used.");
 
             // Deleting a non-existent object is a no-op.
-            if (this.id == null) return;
+            if (this.id == null) return Promise.resolve();
 
-            await Database.run(`DELETE FROM ${tableName} WHERE id = ?`, [this.id]);
-            delete this.__props.id; // stay consistent by having id being undefined if the document doesn't exist
-            this.__poisoned = true;
+            return Database.run(`DELETE FROM ${tableName} WHERE id = ?`, [this.id]).then(() => {
+                delete this.__props.id; // stay consistent by having id being undefined if the document doesn't exist
+                this.__poisoned = true;
+            });
         }
 
         // Override toJSON behavior to strip out __props and __poisoned and add id and actual props.
