@@ -73,6 +73,9 @@ export type BasieClassType<T extends Basie> = {
      * User.where("name LIKE ? AND age = 20", "%" + searchTerm + "%") // finds all users of age 20 whose name contains `searchTerm`.
      */
     where(query: string, ...args: any[]): Promise<T[]>;
+
+    count(params?: Partial<T>): Promise<number>;
+    count(query: string, ...args: any[]): Promise<number>;
 };
 
 /**

@@ -224,6 +224,15 @@ class WithMetadata {
     }
 
     @test
+    async "count"() {
+        await User.setup();
+
+        expect(await UserModel.count()).to.equal(2);
+        expect(await UserModel.count({ name: "Thijs" })).to.equal(1);
+        expect(await UserModel.count("name LIKE ?", "%i%")).to.equal(2);
+    }
+
+    @test
     async "child models"() {
         await User.setup();
         await Role.addRole((await UserModel.first())!, "Test Role");

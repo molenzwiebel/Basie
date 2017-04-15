@@ -88,7 +88,7 @@ export function Based<Template extends Basie>(Base: AbstractConstructor<Template
         static findBy(params: Partial<Template>): Promise<Template | undefined> {
             const columns = toColumnNames(params);
             return Database.get(
-                `SELECT * FROM ${tableName} WHERE ${columns.map(x => x[1] + " = ?").join(" AND ")} LIMIT 1`,
+                `SELECT * FROM ${tableName} ${columns.length > 0 ? 'WHERE' : ''} ${columns.map(x => x[1] + " = ?").join(" AND ")} LIMIT 1`,
                 columns.map(x => params[x[0]])
             ).then(x => x && BasieClass.materialize(x));
         }
@@ -102,9 +102,27 @@ export function Based<Template extends Basie>(Base: AbstractConstructor<Template
             // Partial
             const columns = toColumnNames(params);
             return Database.all(
-                `SELECT * FROM ${tableName} WHERE ${columns.map(x => x[1] + " = ?").join(" AND ")}`,
+                `SELECT * FROM ${tableName} ${columns.length > 0 ? 'WHERE' : ''} ${columns.map(x => x[1] + " = ?").join(" AND ")}`,
                 columns.map(x => params[x[0]])
             ).then(x => Promise.all(x.map(BasieClass.materialize)));
+        }
+
+        static count(params: (Partial<Template> | undefined) | string, ...args: any[]): Promise<number> {
+            // Simple where clause.
+            if (typeof params === "string") {
+                return Database.get<{ count: number }>(`SELECT COUNT(*) as count FROM ${tableName} WHERE ${params}`, args).then(x => x!.count);
+            }
+
+            if (!params || Object.keys(params).length === 0) {
+                return Database.get<{ count: number }>(`SELECT COUNT(*) as count FROM ${tableName}`).then(x => x!.count);
+            }
+
+            // Partial
+            const columns = toColumnNames(params);
+            return Database.get<{ count: number }>(
+                `SELECT COUNT(*) as count FROM ${tableName} WHERE ${columns.map(x => x[1] + " = ?").join(" AND ")}`,
+                columns.map(x => params[x[0]])
+            ).then(x => x!.count);
         }
 
         // Converts the raw sqlite response to the instance of the Template.
