@@ -89,7 +89,7 @@ function fieldImplementation(name: string | undefined, proto: BasiePrototype, fi
  * be given, or is "<table name>_id" by default. The type of the annotated field
  * should be B<Template>[]. If decorator metadata is on, this will be validated at
  * runtime. The annotation takes a type function to ensure this works regardless of
- * initialization order. The convention for this is `@children(type => ResultOfBasedCall)`.
+ * initialization order. The convention for this is `@children(model => ResultOfBasedCall)`.
  * Note that the property annotated by this annotation will be frozen and cannot be
  * re-assigned. The array is populated upon loading and will not reflect changes in
  * the meantime. Changing the array and then calling save() will not propagate changes

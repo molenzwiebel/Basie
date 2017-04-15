@@ -2,6 +2,23 @@
   "name": "basie",
   "version": "1.0.0",
   "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "author": "Thijs Molendijk (molenzwiebel)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/molenzwiebel/basie.git"
+  },
+  "bugs": {
+    "url": "https://github.com/molenzwiebel/basie/issues"
+  },
+  "homepage": "https://github.com/molenzwiebel/basie#readme",
+  "keywords": [
+    "typescript",
+    "sqlite",
+    "basie",
+    "database",
+    "persistence"
+  ],
   "license": "MIT",
   "scripts": {
     "test": "tsc -p . && mocha \"dist/tests/*.js\"",
