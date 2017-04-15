@@ -1,0 +1,2 @@
+# Only commit dist, not src
+src/

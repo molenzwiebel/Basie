@@ -1,4 +1,4 @@
-# Basie [![Build Status](https://travis-ci.org/molenzwiebel/Basie.svg?branch=master)](https://travis-ci.org/molenzwiebel/Basie) [![Coverage Status](https://coveralls.io/repos/github/molenzwiebel/Basie/badge.svg)](https://coveralls.io/github/molenzwiebel/Basie)
+# Basie [![Build Status](https://travis-ci.org/molenzwiebel/Basie.svg?branch=master)](https://travis-ci.org/molenzwiebel/Basie) [![Coverage Status](https://coveralls.io/repos/github/molenzwiebel/Basie/badge.svg)](https://coveralls.io/github/molenzwiebel/Basie) [![npm version](https://badge.fury.io/js/basie.svg)](https://badge.fury.io/js/basie)
 
 A TypeScript package for when you need simple persistence to a database with a fluent querying method and easy-to-understand schemantics. Requires Node 6.4 and TypeScript 2.2 or higher.
 
