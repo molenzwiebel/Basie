@@ -1,4 +1,4 @@
-# Basie
+# Basie [![Build Status](https://travis-ci.org/molenzwiebel/Basie.svg?branch=master)](https://travis-ci.org/molenzwiebel/Basie)
 
 A TypeScript package for when you need simple persistence to a database with a fluent querying method and easy-to-understand schemantics. Requires Node 6.4 and TypeScript 2.2 or higher.
 
