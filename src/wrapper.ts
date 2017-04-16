@@ -200,6 +200,11 @@ export function Based<Template extends Basie>(Base: AbstractConstructor<Template
             delete ret.__props;
             return Object.assign(ret, this.__props);
         }
+
+        // Does the same as toJSON, but for util.inspect purposes.
+        inspect(depth: number) {
+            return this.toJSON();
+        }
     }
 
     // Utility function that generates a joined string of field names.

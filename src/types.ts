@@ -118,6 +118,11 @@ export abstract class Basie {
      * This is done to prevent users from accidentally modifying deleted objects.
      */
     abstract destroy(): Promise<void>;
+
+    /**
+     * Overrides toJSON behavior so that JSON.stringify will work as expected.
+     */
+    abstract toJSON(): object;
 };
 
 /**

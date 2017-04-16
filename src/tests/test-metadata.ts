@@ -1,5 +1,6 @@
 import { suite, test } from "mocha-typescript";
 import { expect } from "chai";
+import { inspect } from "util";
 
 import Based, { Basie, field, children, Database, B } from "../";
 
@@ -356,5 +357,17 @@ class WithMetadata {
         await Role.addRole(u, "Cool");
         u = (await UserModel.first())!;
         expect(JSON.stringify(u)).to.equal(`{"id":1,"name":"Thijs","age":17,"roles":[{"id":1,"name":"Cool","user_id":1}]}`);
+    }
+
+    @test
+    async "util.inspect gives expected results"() {
+        await User.setup();
+
+        let u = (await UserModel.first())!;
+        expect(inspect(u)).to.equal(`{ id: 1, name: 'Thijs', age: 17, roles: [] }`);
+
+        await Role.addRole(u, "Cool");
+        u = (await UserModel.first())!;
+        expect(inspect(u)).to.equal('{ id: 1,\n  name: \'Thijs\',\n  age: 17,\n  roles: [ { id: 1, name: \'Cool\', user_id: 1 } ] }');
     }
 }
