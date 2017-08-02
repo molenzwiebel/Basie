@@ -265,6 +265,111 @@ export default class QueryBuilder<T> {
     }
 
     /**
+     * Adds a new INNER JOIN with the specified table on the specified columns and operators.
+     * This operation loses type-safety since it is impossible to determine the return type
+     * of the join statically.
+     */
+    public join(table: string, first: string, operator: Operator, second: string, type?: JoinType): QueryBuilder<KeyedDatabaseResult>;
+
+    /**
+     * Adds a new nested INNER JOIN with the specified table. The handler receives a JoinClause
+     * which it can use to build the new join.
+     */
+    public join(table: string, handler: (clause: JoinClause) => any): QueryBuilder<KeyedDatabaseResult>;
+
+    /**
+     * Adds a new INNER JOIN with the specified model and the specified columns and operator.
+     * This operation is type safe and returns a union of the current fields and the fields of
+     * the specified model.
+     */
+    public join<M extends Wrapped<any>>(model: M, first: string, operator: Operator, second: string, type?: JoinType): QueryBuilder<T & M>;
+
+    /**
+     * Adds a new nested INNER JOIN with the specified model. The handler receives a JoinClause
+     * which it can use to build the new join. This operation is type safe and returns a union
+     * of the current fields and the fields of the specified model.
+     */
+    public join<M extends Wrapped<any>>(model: M, handler: (clause: JoinClause) => any): QueryBuilder<T & M>;
+
+    public join<M>(tableOrModel: string | M, first: string | ((clause: JoinClause) => any), operator?: Operator, second?: string, type: JoinType = "INNER") {
+        this.modelPrototype = null;
+
+        const table = typeof tableOrModel === "string" ? tableOrModel : (<any>tableOrModel).tableName;
+        const clause = new JoinClause(type, table);
+
+        if (typeof first === "function") {
+            first(clause);
+        } else {
+            clause.on(first, operator!, second!);
+        }
+
+        this.joins.push(clause);
+        return <any>this;
+    }
+
+    /**
+     * Adds a new LEFT JOIN with the specified table on the specified columns and operators.
+     * This operation loses type-safety since it is impossible to determine the return type
+     * of the join statically.
+     */
+    public leftJoin(table: string, first: string, operator: Operator, second: string): QueryBuilder<KeyedDatabaseResult>;
+
+    /**
+     * Adds a new nested LEFT JOIN with the specified table. The handler receives a JoinClause
+     * which it can use to build the new join.
+     */
+    public leftJoin(table: string, handler: (clause: JoinClause) => any): QueryBuilder<KeyedDatabaseResult>;
+
+    /**
+     * Adds a new LEFT JOIN with the specified model and the specified columns and operator.
+     * This operation is type safe and returns a union of the current fields and the fields of
+     * the specified model.
+     */
+    public leftJoin<M extends Wrapped<any>>(model: M, first: string, operator: Operator, second: string): QueryBuilder<T & M>;
+
+    /**
+     * Adds a new nested LEFT JOIN with the specified model. The handler receives a JoinClause
+     * which it can use to build the new join. This operation is type safe and returns a union
+     * of the current fields and the fields of the specified model.
+     */
+    public leftJoin<M extends Wrapped<any>>(model: M, handler: (clause: JoinClause) => any): QueryBuilder<T & M>;
+
+    public leftJoin<M>(tableOrModel: string | M, first: string | ((clause: JoinClause) => any), operator?: Operator, second?: string) {
+        return (<any>this.join)(tableOrModel, first, operator, second, "LEFT");
+    }
+
+    /**
+     * Adds a new RIGHT JOIN with the specified table on the specified columns and operators.
+     * This operation loses type-safety since it is impossible to determine the return type
+     * of the join statically.
+     */
+    public rightJoin(table: string, first: string, operator: Operator, second: string): QueryBuilder<KeyedDatabaseResult>;
+
+    /**
+     * Adds a new nested RIGHT JOIN with the specified table. The handler receives a JoinClause
+     * which it can use to build the new join.
+     */
+    public rightJoin(table: string, handler: (clause: JoinClause) => any): QueryBuilder<KeyedDatabaseResult>;
+
+    /**
+     * Adds a new RIGHT JOIN with the specified model and the specified columns and operator.
+     * This operation is type safe and returns a union of the current fields and the fields of
+     * the specified model.
+     */
+    public rightJoin<M extends Wrapped<any>>(model: M, first: string, operator: Operator, second: string): QueryBuilder<T & M>;
+
+    /**
+     * Adds a new nested RIGHT JOIN with the specified model. The handler receives a JoinClause
+     * which it can use to build the new join. This operation is type safe and returns a union
+     * of the current fields and the fields of the specified model.
+     */
+    public rightJoin<M extends Wrapped<any>>(model: M, handler: (clause: JoinClause) => any): QueryBuilder<T & M>;
+
+    public rightJoin<M>(tableOrModel: string | M, first: string | ((clause: JoinClause) => any), operator?: Operator, second?: string) {
+        return (<any>this.join)(tableOrModel, first, operator, second, "RIGHT");
+    }
+
+    /**
      * Marks the query to group the results by the provided column names.
      */
     public groupBy<K extends keyof T>(...groups: K[]) {
