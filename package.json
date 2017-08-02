@@ -28,11 +28,18 @@
   },
   "devDependencies": {
     "@types/chai": "^4.0.2",
+    "@types/node": "^8.0.19",
+    "@types/pluralize": "^0.0.27",
     "chai": "^4.1.0",
     "coveralls": "^2.13.1",
     "istanbul": "^0.4.5",
     "mocha": "^3.5.0",
     "mocha-typescript": "^1.1.7",
     "typescript": "^2.4.2"
+  },
+  "dependencies": {
+    "@types/pg": "^6.1.43",
+    "@types/sqlite3": "^3.1.0",
+    "pluralize": "^6.0.0"
   }
 }
