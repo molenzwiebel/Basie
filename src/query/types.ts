@@ -32,6 +32,7 @@ export interface ColumnWhereClause {
 export interface RawWhereClause {
     type: "raw";
     sql: string;
+    values: DatabaseType[];
     boolean: QueryBoolean;
 }
 

@@ -37,6 +37,11 @@ export default class QueryBuilder<T> {
     isDistinct = false;
 
     /**
+     * All joins for the current query.
+     */
+    joins: JoinClause[] = [];
+
+    /**
      * All where clauses for the current query.
      */
     wheres: WhereQueryClause[] = [];
@@ -97,6 +102,166 @@ export default class QueryBuilder<T> {
         this.modelPrototype = (<any>modelOrTable).prototype;
         this.columns = ["*"];
         return <any>this;
+    }
+
+    /**
+     * Creates a new nested where clause. The specified callback receives a nested
+     * query builder that can be used to build the nested queries.
+     */
+    public where(handler: (builder: this) => any): this;
+
+    /**
+     * Adds a new where clause for the specified column, requiring that it matches
+     * the specified variable. This is an alias for where(column, "=", value).
+     */
+    public where<K extends keyof T>(column: K, value: T[K]): this;
+
+    /**
+     * Adds a new where clause for the specified column, operator and value. Optionally
+     * you can provide a QueryBoolean of "OR" instead of "AND", but it is recommended that
+     * you use `orWhere` instead.
+     */
+    public where<K extends keyof T>(column: K, operator: Operator, value: T[K], boolean?: QueryBoolean): this;
+
+    public where<K extends keyof T>(column: K | ((builder: this) => any), operatorOrValue?: Operator | T[K], value?: T[K], boolean: QueryBoolean = "AND") {
+        if (typeof column === "function") {
+            return this.whereNested(column, boolean);
+        }
+
+        if (typeof value === "undefined") {
+            value = <any>operatorOrValue;
+            operatorOrValue = "=";
+        }
+
+        this.wheres.push({ type: "basic", column, operator: <Operator>operatorOrValue, value: <DatabaseType><any>value, boolean });
+        return this;
+    }
+
+    /**
+     * Creates a new nested WHERE OR clause. The specified callback receives a nested
+     * query builder that can be used to build the nested queries.
+     */
+    public orWhere(handler: (builder: this) => any): this;
+
+    /**
+     * Adds a new WHERE OR clause for the specified column, requiring that it matches
+     * the specified variable. This is an alias for where(column, "=", value).
+     */
+    public orWhere<K extends keyof T>(column: K, value: T[K]): this;
+
+    /**
+     * Adds a new WHERE OR clause for the specified column, operator and value. Use
+     * `where` if you want to add a WHERE AND clause instead.
+     */
+    public orWhere<K extends keyof T>(column: K, operator: Operator, value: T[K]): this;
+
+    public orWhere<K extends keyof T>(column: K | ((builder: this) => any), operatorOrValue?: Operator | T[K], value?: T[K]) {
+        return (<any>this.where)(column, operatorOrValue, value, "OR");
+    }
+
+    /**
+     * Adds a new where clause comparing two columns of the current query. This uses
+     * AND as boolean by default, use `orWhereColumn` if you want OR instead.
+     */
+    public whereColumn<K1 extends keyof T, K2 extends keyof T>(first: K1, operator: Operator, second: K2, boolean: QueryBoolean = "AND") {
+        this.wheres.push({
+            type: "column",
+            first,
+            operator,
+            second,
+            boolean
+        });
+        return this;
+    }
+
+    /**
+     * Adds a new WHERE OR clause comparing two columns of the current query. This uses
+     * OR, use `whereColumn` if you want AND instead.
+     */
+    public orWhereColumn<K1 extends keyof T, K2 extends keyof T>(first: K1, operator: Operator, second: K2) {
+        return this.whereColumn(first, operator, second, "OR");
+    }
+
+    /**
+     * Adds a new raw where clause for the current query. You can use ? as a substitute for arguments
+     * to securely bind parameters.
+     */
+    public whereRaw<K extends keyof T>(column: K, query: string, args: DatabaseType[], boolean: QueryBoolean = "AND"): this {
+        this.wheres.push({
+            type: "raw",
+            column,
+            sql: query,
+            values: args,
+            boolean
+        });
+
+        return this;
+    }
+
+    /**
+     * Adds a new raw WHERE OR clause for the current query. You can use ? as a substitute for arguments
+     * to securely bind parameters.
+     */
+    public orWhereRaw<K extends keyof T>(column: K, query: string, args: DatabaseType[]): this {
+        return this.whereRaw(column, query, args, "OR");
+    }
+
+    /**
+     * Adds a new where clause asserting that the specified column is NULL.
+     */
+    public whereNull<K extends keyof T>(column: K, boolean: QueryBoolean = "AND", negate = false): this {
+        this.wheres.push({
+            type: "null",
+            column,
+            boolean,
+            negate
+        });
+        return this;
+    }
+
+    /**
+     * Adds a new WHERE OR clause asserting that the specified column is NULL.
+     */
+    public orWhereNull<K extends keyof T>(column: K): this {
+        return this.whereNull(column, "OR");
+    }
+
+    /**
+     * Adds a new where clause asserting that the specified column is NOT NULL.
+     */
+    public whereNotNull<K extends keyof T>(column: K): this {
+        return this.whereNull(column, "AND", true);
+    }
+
+    /**
+     * Adds a new WHERE OR clause asserting that the specified column is NOT NULL.
+     */
+    public orWhereNotNull<K extends keyof T>(column: K): this {
+        return this.whereNull(column, "OR", true);
+    }
+
+    /**
+     * Adds a new nested where query. The handler receives a new QueryBuilder that
+     * can be used to enter the where clauses of the nested where.
+     */
+    public whereNested(handler: (builder: QueryBuilder<T>) => void, boolean: QueryBoolean = "AND") {
+        const builder = this.createNew().from<T>(this.table);
+        handler(builder);
+
+        this.wheres.push({
+            type: "nested",
+            builder,
+            boolean
+        });
+        return this;
+    }
+
+    /**
+     * Adds a new nested WHERE OR query. The handler receives a new QueryBuilder that
+     * can be used to enter the where clauses of the nested where.
+     */
+    public orWhereNested(handler: (builder: QueryBuilder<T>) => void) {
+        return this.whereNested(handler, "OR");
     }
 
     /**
@@ -228,7 +393,7 @@ export default class QueryBuilder<T> {
     /**
      * Deletes all rows matching the current query.
      */
-    public remove(): Promise<void> {
+    public delete(): Promise<void> {
         return TODO();
     }
 
@@ -240,6 +405,9 @@ export default class QueryBuilder<T> {
         return <this>new QueryBuilder<T>();
     }
 }
+
+// This needs to be here (below QueryBuilder) to prevent a cyclic dependency.
+import JoinClause from "./join-clause";
 
 function TODO(): never {
     throw new Error("TODO");
