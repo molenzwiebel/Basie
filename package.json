@@ -1,0 +1,38 @@
+{
+  "name": "basie",
+  "version": "2.0.0",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "author": "Thijs Molendijk (molenzwiebel)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/molenzwiebel/basie.git"
+  },
+  "bugs": {
+    "url": "https://github.com/molenzwiebel/basie/issues"
+  },
+  "homepage": "https://github.com/molenzwiebel/basie#readme",
+  "keywords": [
+    "typescript",
+    "basie",
+    "orm",
+    "database",
+    "persistence"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "test": "tsc -p . && mocha \"dist/tests/*.js\"",
+    "cover": "tsc -p . && istanbul cover _mocha --report lcovonly -- -R spec \"dist/tests/*.js\" && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
+    "watch": "tsc -p . -w",
+    "prepublishOnly": "tsc -p ."
+  },
+  "devDependencies": {
+    "@types/chai": "^4.0.2",
+    "chai": "^4.1.0",
+    "coveralls": "^2.13.1",
+    "istanbul": "^0.4.5",
+    "mocha": "^3.5.0",
+    "mocha-typescript": "^1.1.7",
+    "typescript": "^2.4.2"
+  }
+}
