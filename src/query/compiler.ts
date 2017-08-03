@@ -253,7 +253,7 @@ export default class SQLGrammarCompiler {
         const wheres = this.compileWheres(builder);
 
         return {
-            sql: `UPDATE ${this.escapeTable(builder.table)}${joins.sql} SET ${columns} ${wheres.sql}`,
+            sql: `UPDATE ${this.escapeTable(builder.table)}${joins.sql ? " " + joins.sql : ""} SET ${columns} ${wheres.sql}`,
             args: [...joins.args, ...args, ...wheres.args]
         };
     }
@@ -265,7 +265,7 @@ export default class SQLGrammarCompiler {
         const wheres = this.compileWheres(builder);
 
         return {
-            sql: `DELETE FROM ${this.escapeTable(builder.table)} ${wheres.sql}`,
+            sql: `DELETE FROM ${this.escapeTable(builder.table)}${wheres.sql ? " " + wheres.sql : ""}`,
             args: wheres.args
         };
     }

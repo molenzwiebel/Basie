@@ -186,10 +186,9 @@ export default class QueryBuilder<T> {
      * Adds a new raw where clause for the current query. You can use ? as a substitute for arguments
      * to securely bind parameters.
      */
-    public whereRaw<K extends keyof T>(column: K, query: string, args: DatabaseType[], boolean: QueryBoolean = "AND"): this {
+    public whereRaw(query: string, args: DatabaseType[], boolean: QueryBoolean = "AND"): this {
         this.wheres.push({
             type: "raw",
-            column,
             sql: query,
             values: args,
             boolean
@@ -202,8 +201,8 @@ export default class QueryBuilder<T> {
      * Adds a new raw WHERE OR clause for the current query. You can use ? as a substitute for arguments
      * to securely bind parameters.
      */
-    public orWhereRaw<K extends keyof T>(column: K, query: string, args: DatabaseType[]): this {
-        return this.whereRaw(column, query, args, "OR");
+    public orWhereRaw(query: string, args: DatabaseType[]): this {
+        return this.whereRaw(query, args, "OR");
     }
 
     /**

@@ -13,6 +13,7 @@ export default class JoinClause extends QueryBuilder<any> {
     constructor(type: JoinType, joiningOn: string) {
         super();
 
+        this.table = joiningOn;
         this.type = type;
         this.joiningOn = joiningOn;
     }
@@ -21,7 +22,7 @@ export default class JoinClause extends QueryBuilder<any> {
      * Creates a new nested ON clause. The specified callback receives a nested
      * query builder that can be used to build the nested queries.
      */
-    public on(method: () => any): this;
+    public on(method: (builder: this) => any): this;
 
     /**
      * Adds a new ON clause for the specified column, operator and value. Optionally
@@ -30,7 +31,7 @@ export default class JoinClause extends QueryBuilder<any> {
      */
     public on(first: string, operator: Operator, second: string, boolean?: QueryBoolean): this;
 
-    public on(firstOrMethod: string | (() => any), operator?: Operator, second?: string, boolean: QueryBoolean = "AND") {
+    public on(firstOrMethod: string | ((builder: this) => any), operator?: Operator, second?: string, boolean: QueryBoolean = "AND") {
         if (typeof firstOrMethod === "function") {
             return this.whereNested(firstOrMethod, boolean);
         }
