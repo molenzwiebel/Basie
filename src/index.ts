@@ -5,6 +5,7 @@ import Sqlite3Engine from "./engines/sqlite3-engine";
 import PostgresEngine from "./engines/postgres-engine";
 import BaseModel, { DatabaseType, Wrapped } from "./base-model";
 import { getTableName } from "./util";
+import QueryBuilder from "./query/builder";
 
 export class BasieStatic {
     private engine: DatabaseEngine | null = null;
@@ -50,9 +51,22 @@ export class BasieStatic {
         return <ConstructorFN extends { new(...args: any[]): InstanceType2 }, InstanceType2 extends Record<Fields, DatabaseType | Function>>(arg: ConstructorFN, tableName?: string) => {
             if (!tableName) tableName = getTableName(arg.name);
 
-            const local = <Wrapped<ConstructorFN>>arg;
+            const local = <Wrapped<ConstructorFN, InstanceType2>>arg;
             (<any>local).tableName = tableName;
-            return local;
+
+            return <Wrapped<ConstructorFN, InstanceType>>new Proxy(local, {
+                get(target: any, name) {
+                    // If the property exists on the object itself (static method), return that.
+                    if (typeof target[name] !== "undefined") return target[name];
+
+                    const builder = <any>QueryBuilder.model(local);
+                    // If it is not a function, act like it doesn't exist (which is probably the thruth).
+                    if (typeof builder[name] !== "function") return undefined;
+
+                    // Return that method of the QueryBuilder and bind it to the builder.
+                    return builder[name].bind(builder);
+                }
+            });
         };
     }
 }

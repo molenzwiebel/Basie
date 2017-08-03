@@ -21,6 +21,11 @@ class QueryTests {
         Basie.sqlite(db!);
     }
 
+    async after() {
+        // Ensure that database is clean unset after our tests.
+        Basie.use(<any>null);
+    }
+
     @test
     async inserts() {
         await builder().insert({ id: 0, name: "Thijs", age: 17 });
@@ -48,7 +53,7 @@ class QueryTests {
         expect(await builder().min("age")).to.equal(15);
         expect(await builder().max("age")).to.equal(52);
         expect(await builder().avg("age")).to.equal(33.5);
-        expect(await builder().sum("age")).to.equal(17 + 15 + 52 + 50);
+        expect(await builder().sum("age")).to.equal(134);
     }
 
     @test

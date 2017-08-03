@@ -15,4 +15,11 @@ class QueryBuilderTests {
             QueryBuilder.table("test").limit(0);
         }).to.throw("limit() expects a positive integer");
     }
+
+    @test
+    throwsOnUnsetEngine() {
+        expect(() => {
+            QueryBuilder.table("test").get();
+        }).to.throw("No database engine has been configured. Ensure that you use Basie.use(engine) before attempting any queries.");
+    }
 }

@@ -1,5 +1,5 @@
 import { JoinType, Operator, OrderDirection, QueryBoolean, WhereQueryClause } from "./types";
-import { default as BaseModel, DatabaseType, KeyedDatabaseResult, Wrapped } from "../base-model";
+import { DatabaseType, KeyedDatabaseResult, Wrapped } from "../base-model";
 import Basie from "../index";
 
 /**
@@ -86,7 +86,7 @@ export default class QueryBuilder<T> {
      * Changes the table this query is currently acting on to the table associated
      * with the specified model.
      */
-    public from<M extends Wrapped<any>>(model: M): QueryBuilder<M>;
+    public from<A, M extends Wrapped<any, A>>(model: M): QueryBuilder<A>;
 
     /**
      * Changes the table this query is currently acting on to the specified table.
@@ -284,14 +284,14 @@ export default class QueryBuilder<T> {
      * This operation is type safe and returns a union of the current fields and the fields of
      * the specified model.
      */
-    public join<M extends Wrapped<any>>(model: M, first: string, operator: Operator, second: string, type?: JoinType): QueryBuilder<T & M>;
+    public join<A, M extends Wrapped<any, A>>(model: M, first: string, operator: Operator, second: string, type?: JoinType): QueryBuilder<T & A>;
 
     /**
      * Adds a new nested INNER JOIN with the specified model. The handler receives a JoinClause
      * which it can use to build the new join. This operation is type safe and returns a union
      * of the current fields and the fields of the specified model.
      */
-    public join<M extends Wrapped<any>>(model: M, handler: (clause: JoinClause) => any): QueryBuilder<T & M>;
+    public join<A, M extends Wrapped<any, A>>(model: M, handler: (clause: JoinClause) => any): QueryBuilder<T & A>;
 
     public join<M>(tableOrModel: string | M, first: string | ((clause: JoinClause) => any), operator?: Operator, second?: string, type: JoinType = "INNER") {
         this.modelConstructor = null;
@@ -327,14 +327,14 @@ export default class QueryBuilder<T> {
      * This operation is type safe and returns a union of the current fields and the fields of
      * the specified model.
      */
-    public leftJoin<M extends Wrapped<any>>(model: M, first: string, operator: Operator, second: string): QueryBuilder<T & M>;
+    public leftJoin<A, M extends Wrapped<any, A>>(model: M, first: string, operator: Operator, second: string): QueryBuilder<T & A>;
 
     /**
      * Adds a new nested LEFT JOIN with the specified model. The handler receives a JoinClause
      * which it can use to build the new join. This operation is type safe and returns a union
      * of the current fields and the fields of the specified model.
      */
-    public leftJoin<M extends Wrapped<any>>(model: M, handler: (clause: JoinClause) => any): QueryBuilder<T & M>;
+    public leftJoin<A, M extends Wrapped<any, A>>(model: M, handler: (clause: JoinClause) => any): QueryBuilder<T & A>;
 
     public leftJoin<M>(tableOrModel: string | M, first: string | ((clause: JoinClause) => any), operator?: Operator, second?: string) {
         return (<any>this.join)(tableOrModel, first, operator, second, "LEFT");
@@ -358,14 +358,14 @@ export default class QueryBuilder<T> {
      * This operation is type safe and returns a union of the current fields and the fields of
      * the specified model.
      */
-    public rightJoin<M extends Wrapped<any>>(model: M, first: string, operator: Operator, second: string): QueryBuilder<T & M>;
+    public rightJoin<A, M extends Wrapped<any, A>>(model: M, first: string, operator: Operator, second: string): QueryBuilder<T & A>;
 
     /**
      * Adds a new nested RIGHT JOIN with the specified model. The handler receives a JoinClause
      * which it can use to build the new join. This operation is type safe and returns a union
      * of the current fields and the fields of the specified model.
      */
-    public rightJoin<M extends Wrapped<any>>(model: M, handler: (clause: JoinClause) => any): QueryBuilder<T & M>;
+    public rightJoin<A, M extends Wrapped<any, A>>(model: M, handler: (clause: JoinClause) => any): QueryBuilder<T & A>;
 
     public rightJoin<M>(tableOrModel: string | M, first: string | ((clause: JoinClause) => any), operator?: Operator, second?: string) {
         return (<any>this.join)(tableOrModel, first, operator, second, "RIGHT");
@@ -419,11 +419,25 @@ export default class QueryBuilder<T> {
     }
 
     /**
+     * Finds the first row with the specified ID. Alias for where("id", id).first()
+     */
+    public find(id: number): Promise<T | undefined> {
+        return this.where(<any>"id", <any>id).first();
+    }
+
+    /**
      * Returns the specified column of the first result returned by this query.
      */
     public async value<K extends keyof T>(column: K): Promise<T[K]> {
         const entries = await this.limit(1).get();
         return entries[0][column];
+    }
+
+    /**
+     * Alias for get().
+     */
+    public all(): Promise<T[]> {
+        return this.get();
     }
 
     /**
@@ -552,11 +566,10 @@ export default class QueryBuilder<T> {
     /**
      * Creates a new QueryBuilder referencing the specified model.
      */
-    public static model<T extends Wrapped<any>>(model: T): QueryBuilder<T> {
-        return new QueryBuilder().from<T>(model);
+    public static model<A, T extends Wrapped<any, A>>(model: T): QueryBuilder<A> {
+        return new QueryBuilder().from<A, T>(model);
     }
 }
 
 // This needs to be here (below QueryBuilder) to prevent a cyclic dependency.
 import JoinClause from "./join-clause";
-import { Query } from "pg";
