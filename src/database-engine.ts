@@ -1,4 +1,5 @@
 import { DatabaseType, KeyedDatabaseResult } from "./base-model";
+import SQLGrammarCompiler from "./query/compiler";
 
 /**
  * Represents an engine for an SQL-based database.
@@ -20,4 +21,11 @@ export interface DatabaseEngine {
      * @returns {Promise<KeyedDatabaseResult>}
      */
     get(sql: string, params: DatabaseType[]): Promise<KeyedDatabaseResult[]>;
+
+    /**
+     * Returns the SQLGrammarCompiler responsible for compiling QueryBuilders into actual
+     * SQL queries. This may be a raw SQLGrammarCompiler or a subclass for database-specific
+     * minor changes to the queries.
+     */
+    getGrammarCompiler(): SQLGrammarCompiler;
 }

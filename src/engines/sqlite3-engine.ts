@@ -1,6 +1,7 @@
 import { DatabaseEngine } from "../database-engine";
 import { Database } from "sqlite3";
 import { DatabaseType, KeyedDatabaseResult } from "../base-model";
+import SQLGrammarCompiler from "../query/compiler";
 
 export default class Sqlite3Engine implements DatabaseEngine {
     private connection: Database;
@@ -23,5 +24,9 @@ export default class Sqlite3Engine implements DatabaseEngine {
                 err ? reject(err) : resolve(row);
             });
         });
+    }
+
+    getGrammarCompiler(): SQLGrammarCompiler {
+        return new SQLGrammarCompiler();
     }
 }
