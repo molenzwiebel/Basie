@@ -53,6 +53,7 @@ export class BasieStatic {
 
             const local = <Wrapped<ConstructorFN, InstanceType2>>arg;
             (<any>local).tableName = tableName;
+            (<any>local).prototype.tableName = tableName;
 
             return <Wrapped<ConstructorFN, InstanceType>>new Proxy(local, {
                 get(target: any, name) {

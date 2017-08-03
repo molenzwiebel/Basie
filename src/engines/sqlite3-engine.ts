@@ -26,6 +26,15 @@ export default class Sqlite3Engine implements DatabaseEngine {
         });
     }
 
+    insertAndGetId(table: string, sql: string, params: DatabaseType[]): Promise<number> {
+        return new Promise((resolve, reject) => {
+            this.connection.serialize(async () => {
+                await this.query(sql, params);
+                this.get("SELECT last_insert_rowid() AS id FROM " + table, []).then(x => <number>x[0]["id"]).then(resolve, reject);
+            });
+        });
+    }
+
     getGrammarCompiler(): SQLGrammarCompiler {
         return new SQLGrammarCompiler();
     }

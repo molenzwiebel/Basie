@@ -88,4 +88,10 @@ class PostgresTests {
         await builder().insert({ name: "Thijs", age: 17 });
         expect(await builder().select("age AS myAge").value("myAge")).to.equal(17);
     }
+
+    @test
+    async insertingWithId() {
+        expect(await Basie.getEngine().insertAndGetId("users", "INSERT INTO users (name, age) VALUES (?, ?)", ["Thijs", 17])).to.equal(1);
+        expect(await Basie.getEngine().insertAndGetId("users", "INSERT INTO users (name, age) VALUES (?, ?)", ["Silke", 15])).to.equal(2);
+    }
 }

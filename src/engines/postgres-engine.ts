@@ -18,6 +18,10 @@ export default class PostgresEngine implements DatabaseEngine {
         return this.pool.query(this.transformQuery(sql, params)).then(x => x.rows);
     }
 
+    insertAndGetId(table: string, sql: string, params: DatabaseType[]): Promise<number> {
+        return this.get(sql + " RETURNING id", params).then(x => <number>x[0]["id"]);
+    }
+
     getGrammarCompiler(): SQLGrammarCompiler {
         return new class extends SQLGrammarCompiler {
             protected escapeColumn(column: string): string {

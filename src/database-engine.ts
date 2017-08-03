@@ -23,6 +23,11 @@ export interface DatabaseEngine {
     get(sql: string, params: DatabaseType[]): Promise<KeyedDatabaseResult[]>;
 
     /**
+     * Runs the specified insert query and returns the ID of the inserted row.
+     */
+    insertAndGetId(table: string, sql: string, params: DatabaseType[]): Promise<number>;
+
+    /**
      * Returns the SQLGrammarCompiler responsible for compiling QueryBuilders into actual
      * SQL queries. This may be a raw SQLGrammarCompiler or a subclass for database-specific
      * minor changes to the queries.

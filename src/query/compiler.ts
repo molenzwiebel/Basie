@@ -234,7 +234,7 @@ export default class SQLGrammarCompiler {
      * array has the same structure, and that it is not an empty array.
      */
     compileInsert<T>(builder: QueryBuilder<T>, values: T[]): QueryComponent {
-        const keys = Object.keys(values[0]).filter(x => typeof (<any>values[0])[x] !== "function");
+        const keys = Object.keys(values[0]).filter(x => x !== "id" && typeof (<any>values[0])[x] !== "function");
         const columns = keys.map(x => this.escapeColumn(x)).join(",");
 
         const args = values.map(x => keys.map(k => (<any>x)[k])).reduce((p, c) => [...p, ...c], []);
@@ -251,8 +251,8 @@ export default class SQLGrammarCompiler {
      * simply assumes that everything specified needs to be updated.
      */
     compileUpdate<T>(builder: QueryBuilder<T>, value: Partial<T>): QueryComponent {
-        const columns = Object.keys(value).map(x => x + " = ?").join(", ");
-        const args = Object.keys(value).map(x => <DatabaseType><any>value[x]);
+        const columns = Object.keys(value).filter(x => x !== "id" && typeof (<any>value)[x] !== "function").map(x => x + " = ?").join(", ");
+        const args = Object.keys(value).filter(x => x !== "id" && typeof (<any>value)[x] !== "function").map(x => <DatabaseType><any>value[x]);
 
         const joins = this.compileJoins(builder);
         const wheres = this.compileWheres(builder);

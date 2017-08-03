@@ -65,4 +65,10 @@ class SqliteTests {
         expect(await builder().first()).property("name").to.equal("Thijs");
         expect(await builder().where("name", "LIKE", "%i%").count()).to.equal(3);
     }
+
+    @test
+    async insertingWithId() {
+        expect(await Basie.getEngine().insertAndGetId("users", "INSERT INTO users (name, age) VALUES (?, ?)", ["Thijs", 17])).to.equal(1);
+        expect(await Basie.getEngine().insertAndGetId("users", "INSERT INTO users (name, age) VALUES (?, ?)", ["Silke", 15])).to.equal(2);
+    }
 }

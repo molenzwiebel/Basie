@@ -531,6 +531,16 @@ export default class QueryBuilder<T> {
     }
 
     /**
+     * Essentially the same as `insert()`, but returns the ID of the inserted
+     * row and only supports inserting a single row at a time.
+     */
+    public insertAndGetId(entry: Partial<T>): Promise<number> {
+        const compiler = Basie.getEngine().getGrammarCompiler();
+        const query = compiler.compileInsert(this, [entry]);
+        return Basie.getEngine().insertAndGetId(this.table, query.sql, query.args);
+    }
+
+    /**
      * Updates the specified values for all rows matching the current query.
      */
     public update(values: Partial<T>): Promise<void> {

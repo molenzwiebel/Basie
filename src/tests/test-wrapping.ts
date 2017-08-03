@@ -43,14 +43,45 @@ class WrappingTests {
         const User = Basie.wrap<_User>()(_User);
         type User = _User;
 
-        await QueryBuilder.table<User>("users").insert({ id: 0, name: "Thijs", age: 17 });
+        await QueryBuilder.table<User>("users").insert({ name: "Thijs", age: 17 });
 
-        const first = await User.find(0);
+        const first = await User.find(1);
         expect(first).to.not.equal(undefined);
         expect(first!.name).to.equal("Thijs");
 
         const second = await User.where("age", 17).first();
         expect(second).to.not.equal(undefined);
         expect(second!.age).to.equal(17);
+    }
+
+    @test
+    async "inserts, updates and deletes"() {
+        class _User extends BaseModel {
+            public name: string;
+            public age: number;
+        }
+        const User = Basie.wrap<_User>()(_User);
+        type User = _User;
+
+        const user = new User();
+        user.name = "Thijs";
+        user.age = 17;
+        expect(user.id).to.equal(undefined);
+        await user.save();
+
+        expect(user.id).to.equal(1);
+
+        user.age = 18;
+        await user.save();
+
+        expect(user.id).to.equal(1);
+        expect(await User.where("age", 18).count()).to.equal(1);
+
+        await user.delete();
+        expect(user.id).to.equal(undefined);
+
+        expect(() => {
+            user.delete();
+        }).to.throw("Cannot delete object if it is not in the database.");
     }
 }
