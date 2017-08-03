@@ -228,7 +228,7 @@ export default class SQLGrammarCompiler {
      * or a keyed database value object. This assumes that every element in the `values`
      * array has the same structure, and that it is not an empty array.
      */
-    compileInsert<T extends object>(builder: QueryBuilder<T>, values: T[]): QueryComponent {
+    compileInsert<T>(builder: QueryBuilder<T>, values: T[]): QueryComponent {
         const keys = Object.keys(values[0]).filter(x => typeof (<any>values[0])[x] !== "function");
         const columns = keys.map(x => this.escapeColumn(x)).join(",");
 
@@ -245,9 +245,9 @@ export default class SQLGrammarCompiler {
      * Compiles a full UPDATE query for the specified partial. This does not diff-check and
      * simply assumes that everything specified needs to be updated.
      */
-    compileUpdate<T extends object>(builder: QueryBuilder<T>, value: Partial<T>): QueryComponent {
+    compileUpdate<T>(builder: QueryBuilder<T>, value: Partial<T>): QueryComponent {
         const columns = Object.keys(value).map(x => x + " = ?").join(", ");
-        const args = Object.keys(value).map(x => <DatabaseType>value[x]);
+        const args = Object.keys(value).map(x => <DatabaseType><any>value[x]);
 
         const joins = this.compileJoins(builder);
         const wheres = this.compileWheres(builder);

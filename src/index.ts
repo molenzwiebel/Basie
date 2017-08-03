@@ -6,7 +6,7 @@ import PostgresEngine from "./engines/postgres-engine";
 import BaseModel, { DatabaseType, Wrapped } from "./base-model";
 import { getTableName } from "./util";
 
-export class Basie {
+export class BasieStatic {
     private engine: DatabaseEngine | null = null;
 
     /**
@@ -56,4 +56,4 @@ export class Basie {
         };
     }
 }
-export default new Basie();
+export default new BasieStatic();

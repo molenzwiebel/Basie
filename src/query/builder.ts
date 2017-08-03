@@ -1,5 +1,6 @@
 import { JoinType, Operator, OrderDirection, QueryBoolean, WhereQueryClause } from "./types";
 import { DatabaseType, KeyedDatabaseResult, Wrapped } from "../base-model";
+import Basie from "../index";
 
 /**
  * A fluid SQL query builder that is semi-typesafe and supports selecting, inserting, updating
@@ -8,12 +9,12 @@ import { DatabaseType, KeyedDatabaseResult, Wrapped } from "../base-model";
  */
 export default class QueryBuilder<T> {
     /**
-     * The prototype of the model we are currently querying. If this is non-null,
+     * The constructor of the model we are currently querying. If this is non-null,
      * we are still operating on the full model (no narrowed down views) which means
      * that once we have fetched the objects we can assign this prototype to ensure that
      * the returned instance supports any user-defined methods (along with defaults such as save).
      */
-    modelPrototype: any | null;
+    modelConstructor: Function | null;
 
     /**
      * The aggregate function for this query. If this is set, it is assumed
@@ -67,7 +68,7 @@ export default class QueryBuilder<T> {
      */
     public select(...fields: string[]): QueryBuilder<KeyedDatabaseResult> {
         this.columns = fields;
-        this.modelPrototype = null;
+        this.modelConstructor = null;
         return <any>this;
     }
 
@@ -99,7 +100,7 @@ export default class QueryBuilder<T> {
         }
 
         this.table = (<any>modelOrTable).tableName;
-        this.modelPrototype = (<any>modelOrTable).prototype;
+        this.modelConstructor = <any>modelOrTable;
         this.columns = ["*"];
         return <any>this;
     }
@@ -291,7 +292,7 @@ export default class QueryBuilder<T> {
     public join<M extends Wrapped<any>>(model: M, handler: (clause: JoinClause) => any): QueryBuilder<T & M>;
 
     public join<M>(tableOrModel: string | M, first: string | ((clause: JoinClause) => any), operator?: Operator, second?: string, type: JoinType = "INNER") {
-        this.modelPrototype = null;
+        this.modelConstructor = null;
 
         const table = typeof tableOrModel === "string" ? tableOrModel : (<any>tableOrModel).tableName;
         const clause = new JoinClause(type, table);
@@ -409,96 +410,126 @@ export default class QueryBuilder<T> {
     }
 
     /**
+     * Returns the first row matching this query.
+     */
+    public first(): Promise<T | undefined> {
+        return this.limit(1).get().then(x => x[0]);
+    }
+
+    /**
      * Returns the specified column of the first result returned by this query.
      */
-    public value<K extends keyof T>(column: K): Promise<T[K]> {
-        return TODO();
+    public async value<K extends keyof T>(column: K): Promise<T[K]> {
+        const entries = await this.limit(1).get();
+        return entries[0][column];
     }
 
     /**
      * Returns all rows matching the current query.
      */
     public get(): Promise<T[]> {
-        return TODO();
+        const compiler = Basie.getEngine().getGrammarCompiler();
+        const query = compiler.compileSelect(this);
+
+        return Basie.getEngine().get(query.sql, query.args).then(rows => {
+            return rows.map(row => {
+                if (this.modelConstructor) {
+                    const instance = new (<any>this.modelConstructor)();
+                    return Object.assign(instance, row);
+                }
+
+                return row;
+            });
+        });
     }
 
     /**
      * Returns only the specified column of all rows this query currently targets.
      */
     public pluck<K extends keyof T>(column: K): Promise<T[K][]> {
-        return TODO();
+        this.columns = [column];
+        return this.get().then(x => x.map(y => y[column]));
     }
 
     /**
      * Checks if any rows exist that match the current query. Alias for count > 0.
      */
-    public async exists(): Promise<boolean> {
-        return await this.count() > 0;
+    public exists(): Promise<boolean> {
+        return this.count().then(count => count > 0);
     }
 
     /**
      * Counts the amount of rows matching.
      */
     public count(): Promise<number> {
-        this.aggregateFunction = "COUNT";
-        return TODO();
+        return this.aggregate("COUNT");
     }
 
     /**
      * Returns the average of the specified column, or the current column by default.
      */
     public avg(column?: string): Promise<number> {
-        this.columns = column ? [column] : this.columns;
-        this.aggregateFunction = "AVG";
-        return TODO();
+        return this.aggregate("AVG", column);
     }
 
     /**
      * Returns the sum of the specified column, or the current column by default.
      */
     public sum(column?: string): Promise<number> {
-        this.columns = column ? [column] : this.columns;
-        this.aggregateFunction = "SUM";
-        return TODO();
+        return this.aggregate("SUM", column);
     }
 
     /**
      * Returns the minimum value of the specified column, or the current column by default.
      */
     public min(column?: string): Promise<number> {
-        this.columns = column ? [column] : this.columns;
-        this.aggregateFunction = "MIN";
-        return TODO();
+        return this.aggregate("MIN", column);
     }
 
     /**
      * Returns the maximum value of the specified column, or the current column by default.
      */
     public max(column?: string): Promise<number> {
+        return this.aggregate("MAX", column);
+    }
+
+    /**
+     * Runs the specified aggregate function and returns the result.
+     */
+    public aggregate(fn: string, column?: string): Promise<number> {
         this.columns = column ? [column] : this.columns;
-        this.aggregateFunction = "MAX";
-        return TODO();
+        this.aggregateFunction = fn;
+
+        const compiler = Basie.getEngine().getGrammarCompiler();
+        const query = compiler.compileSelect(this);
+        return Basie.getEngine().get(query.sql, query.args).then(x => <number>x[0]["aggregate"]);
     }
 
     /**
      * Inserts the specified entries in the current table.
      */
-    public insert(entries: T[]): Promise<void> {
-        return TODO();
+    public insert(...entries: T[]): Promise<void> {
+        const compiler = Basie.getEngine().getGrammarCompiler();
+        const query = compiler.compileInsert(this, entries);
+        return Basie.getEngine().query(query.sql, query.args);
     }
 
     /**
      * Updates the specified values for all rows matching the current query.
      */
     public update(values: Partial<T>): Promise<void> {
-        return TODO();
+        const compiler = Basie.getEngine().getGrammarCompiler();
+        const query = compiler.compileUpdate(this, values);
+        return Basie.getEngine().query(query.sql, query.args);
     }
 
     /**
      * Deletes all rows matching the current query.
      */
     public delete(): Promise<void> {
-        return TODO();
+        const compiler = Basie.getEngine().getGrammarCompiler();
+        const query = compiler.compileDelete(this);
+        return Basie.getEngine().query(query.sql, query.args);
     }
 
     /**
@@ -512,7 +543,3 @@ export default class QueryBuilder<T> {
 
 // This needs to be here (below QueryBuilder) to prevent a cyclic dependency.
 import JoinClause from "./join-clause";
-
-function TODO(): never {
-    throw new Error("TODO");
-}
