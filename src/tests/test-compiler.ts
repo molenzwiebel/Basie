@@ -4,9 +4,8 @@ import { expect } from "chai";
 import QueryBuilder from "../query/builder";
 import SQLGrammarCompiler from "../query/compiler";
 
-function compileSelect<T>(fn: (builder: QueryBuilder<T>) => any, toEq: string, args?: any[]) {
-    const builder = new QueryBuilder<T>();
-    builder.from<T>("test");
+function compileSelect<T extends object>(fn: (builder: QueryBuilder<T>) => any, toEq: string, args?: any[]) {
+    const builder = QueryBuilder.table<T>("test");
     fn(builder);
 
     const built = new SQLGrammarCompiler().compileSelect(builder);
@@ -153,8 +152,7 @@ class SQLGrammarCompilerTests {
 
     @test
     compilesInserts() {
-        const builder = new QueryBuilder();
-        builder.from<{ a: string, b: number }>("test");
+        const builder = QueryBuilder.table<{ a: string, b: number }>("test");
 
         let result = new SQLGrammarCompiler().compileInsert(builder, [{ a: "Foo", b: 10 }]);
         expect(result.sql).to.equal("INSERT INTO test (a,b) VALUES (?,?)");
@@ -167,8 +165,8 @@ class SQLGrammarCompilerTests {
 
     @test
     compilesUpdates() {
-        const builder = new QueryBuilder();
-        builder.from<{ a: string, b: number }>("test").where("b", 10);
+        const builder = QueryBuilder.table<{ a: string, b: number }>("test");
+        builder.where("b", 10);
 
         let result = new SQLGrammarCompiler().compileUpdate(builder, { a: "Foo" });
         expect(result.sql).to.equal("UPDATE test SET a = ? WHERE b = ?");
@@ -186,7 +184,7 @@ class SQLGrammarCompilerTests {
 
     @test
     compilesDeletes() {
-        const builder = new QueryBuilder().from<{ a: string, b: number }>("test");
+        const builder = QueryBuilder.table<{ a: string, b: number }>("test");
 
         let result = new SQLGrammarCompiler().compileDelete(builder);
         expect(result.sql).to.equal("DELETE FROM test");

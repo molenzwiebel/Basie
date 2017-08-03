@@ -1,5 +1,5 @@
 import { JoinType, Operator, OrderDirection, QueryBoolean, WhereQueryClause } from "./types";
-import { DatabaseType, KeyedDatabaseResult, Wrapped } from "../base-model";
+import { default as BaseModel, DatabaseType, KeyedDatabaseResult, Wrapped } from "../base-model";
 import Basie from "../index";
 
 /**
@@ -61,6 +61,8 @@ export default class QueryBuilder<T> {
      * The LIMIT clause for the query, or -1 if not applicable.
      */
     limitCount = -1;
+
+    protected constructor() {}
 
     /**
      * Narrows this query down to the specified fields. This erases type-
@@ -539,7 +541,22 @@ export default class QueryBuilder<T> {
     protected createNew(): this {
         return <this>new QueryBuilder<T>();
     }
+
+    /**
+     * Creates a new QueryBuilder referencing the specified table.
+     */
+    public static table<T extends object>(table: string): QueryBuilder<T> {
+        return new QueryBuilder().from<T>(table);
+    }
+
+    /**
+     * Creates a new QueryBuilder referencing the specified model.
+     */
+    public static model<T extends Wrapped<any>>(model: T): QueryBuilder<T> {
+        return new QueryBuilder().from<T>(model);
+    }
 }
 
 // This needs to be here (below QueryBuilder) to prevent a cyclic dependency.
 import JoinClause from "./join-clause";
+import { Query } from "pg";

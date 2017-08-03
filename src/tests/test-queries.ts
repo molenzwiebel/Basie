@@ -7,7 +7,7 @@ import Basie from "../";
 import QueryBuilder from "../query/builder";
 
 function builder() {
-    return new QueryBuilder().from<{ id: number, name: string, age: number }>("users");
+    return QueryBuilder.table<{ id: number, name: string, age: number }>("users");
 }
 
 @suite

@@ -8,11 +8,11 @@ class QueryBuilderTests {
     @test
     throwsOnInvalidLimit() {
         expect(() => {
-            new QueryBuilder().limit(-1);
+            QueryBuilder.table("test").limit(-1);
         }).to.throw("limit() expects a positive integer");
 
         expect(() => {
-            new QueryBuilder().limit(0);
+            QueryBuilder.table("test").limit(0);
         }).to.throw("limit() expects a positive integer");
     }
 }
