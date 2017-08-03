@@ -57,10 +57,12 @@ export class BasieStatic {
             return <Wrapped<ConstructorFN, InstanceType>>new Proxy(local, {
                 get(target: any, name) {
                     // If the property exists on the object itself (static method), return that.
+                    /* istanbul ignore next This incorrectly reports as uncovered, even though it runs. */
                     if (typeof target[name] !== "undefined") return target[name];
 
                     const builder = <any>QueryBuilder.model(local);
                     // If it is not a function, act like it doesn't exist (which is probably the thruth).
+                    /* istanbul ignore next This incorrectly reports as uncovered, even though it runs. */
                     if (typeof builder[name] !== "function") return undefined;
 
                     // Return that method of the QueryBuilder and bind it to the builder.

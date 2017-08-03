@@ -23,6 +23,18 @@ class WrappingTests {
     }
 
     @test
+    async allowsCustomName() {
+        class _User extends BaseModel {
+            public name: string;
+            public age: number;
+        }
+        const User = Basie.wrap<_User>()(_User, "user");
+        type User = _User;
+
+        expect(User.where(x => {}).table).to.equal("user");
+    }
+
+    @test
     async proxiesToQueryBuilder() {
         class _User extends BaseModel {
             public name: string;

@@ -113,6 +113,7 @@ export default class SQLGrammarCompiler {
      * for both JOIN and WHERE compiling.
      */
     compileConditions(builder: Builder): QueryComponent {
+        /* istanbul ignore next This should be caught by compileWheres, but is here as a sanity check. */
         if (!builder.wheres.length) return  { sql: "", args: [] };
 
         const parts = builder.wheres.map((where, i) => {
@@ -122,7 +123,11 @@ export default class SQLGrammarCompiler {
             else if (where.type === "raw") content = this.compileRawWhere(builder, where);
             else if (where.type === "null") content = this.compileNullWhere(builder, where);
             else if (where.type === "nested") content = this.compileNestedWhere(builder, where);
-            else throw new Error("Invalid type for where clause.");
+
+            /* istanbul ignore next Impossible with a properly formed querybuilder. */
+            if (!content) {
+                throw new Error("Invalid type for where clause.");
+            }
 
             return {
                 sql: (i === 0 ? "" : where.boolean + " ") + content.sql,

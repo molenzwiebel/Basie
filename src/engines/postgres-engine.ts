@@ -21,6 +21,14 @@ export default class PostgresEngine implements DatabaseEngine {
     getGrammarCompiler(): SQLGrammarCompiler {
         return new class extends SQLGrammarCompiler {
             protected escapeColumn(column: string): string {
+                if (column === "*") return column;
+
+                // We need to escape both parts of the as independently.
+                if (column.toLowerCase().indexOf(" as ") !== -1) {
+                    const [original, , alias] = column.split(" ");
+                    return this.escapeColumn(original) + " AS " + this.escapeColumn(alias);
+                }
+
                 return column.split(".").map(x => '"' + x + '"').join(".");
             }
 
@@ -34,10 +42,10 @@ export default class PostgresEngine implements DatabaseEngine {
      * Converts ? placeholders into numbered $# placeholders that postgres understands.
      */
     private transformQuery(sql: string, params: DatabaseType[]): { text: string, values: any[] } {
-        let i = 0;
+        let i = 1;
 
         return {
-            text: sql.replace("?", () => "$" + (i++)),
+            text: sql.replace(/\?/g, () => "$" + (i++)),
             values: params
         };
     }

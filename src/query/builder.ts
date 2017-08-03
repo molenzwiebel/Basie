@@ -524,7 +524,7 @@ export default class QueryBuilder<T> {
     /**
      * Inserts the specified entries in the current table.
      */
-    public insert(...entries: T[]): Promise<void> {
+    public insert(...entries: Partial<T>[]): Promise<void> {
         const compiler = Basie.getEngine().getGrammarCompiler();
         const query = compiler.compileInsert(this, entries);
         return Basie.getEngine().query(query.sql, query.args);
