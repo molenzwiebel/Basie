@@ -71,4 +71,27 @@ class SqliteTests {
         expect(await Basie.getEngine().insertAndGetId("users", "INSERT INTO users (name, age) VALUES (?, ?)", ["Thijs", 17])).to.equal(1);
         expect(await Basie.getEngine().insertAndGetId("users", "INSERT INTO users (name, age) VALUES (?, ?)", ["Silke", 15])).to.equal(2);
     }
+
+    @test
+    async immutableArrays() {
+        await builder().insert({ name: "Thijs", age: 17 }, { name: "Silke", age: 15 }, { name: "Marcel", age: 52 }, { name: "Christien", age: 50 });
+
+        const people = await builder().all();
+
+        expect(() => {
+            people.push({ id: 10, name: "John Doe", age: 40 });
+        }).to.throw("object is not extensible");
+
+        expect(() => {
+            people[0] = { id: 10, name: "John Doe", age: 40 };
+        }).to.throw("Cannot assign to read only property");
+
+        expect(() => {
+            people.length = 1;
+        }).to.throw("Cannot assign to read only property");
+
+        expect(() => {
+            people[0].age = 18;
+        }).to.not.throw();
+    }
 }

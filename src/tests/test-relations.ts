@@ -125,4 +125,17 @@ class RelationTests {
         expect(await phone.user()).to.equal(await phone.user());
         expect(await phone.hasUser()).to.equal(await phone.hasUser());
     }
+
+    @test
+    async isImmutable() {
+        await User.insert({ name: "Thijs", age: 17, phone_id: 1 });
+        await Phone.insert({ number: "123", user_id: 1 });
+
+        const phone2 = new Phone();
+        const phones = await (await User.first())!.phones();
+
+        expect(() => {
+            phones.push(phone2);
+        }).to.throw("object is not extensible");
+    }
 }

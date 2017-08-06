@@ -456,7 +456,7 @@ export default class QueryBuilder<T> {
 
                 return row;
             });
-        });
+        }).then(Object.freeze);
     }
 
     /**
