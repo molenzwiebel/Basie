@@ -82,4 +82,6 @@ export class BasieStatic {
         };
     }
 }
+
 export default new BasieStatic();
+export { default as BaseModel, R, A } from "./base-model";
