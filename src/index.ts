@@ -1,11 +1,13 @@
 import { Database as sqliteDatabase } from "sqlite3";
 import { DatabaseEngine } from "./database-engine";
 import * as pg from "pg";
+import * as mysql from "mysql2/promise";
 import Sqlite3Engine from "./engines/sqlite3-engine";
 import PostgresEngine from "./engines/postgres-engine";
 import BaseModel, { DatabaseType, Wrapped } from "./base-model";
 import { getTableName } from "./util";
 import QueryBuilder from "./query/builder";
+import MySQLEngine from "./engines/mysql-engine";
 
 export class BasieStatic {
     private engine: DatabaseEngine | null = null;
@@ -37,6 +39,13 @@ export class BasieStatic {
      */
     public postgres(db: pg.Pool) {
         this.use(new PostgresEngine(db));
+    }
+
+    /**
+     * Configures basie to be used with the specified mysql connection.
+     */
+    public mysql(connection: mysql.Connection) {
+        this.use(new MySQLEngine(connection));
     }
 
     /**

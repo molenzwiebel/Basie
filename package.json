@@ -41,13 +41,15 @@
     "istanbul": "^0.4.5",
     "mocha": "^3.5.0",
     "mocha-typescript": "^1.1.7",
+    "mysql2": "^1.4.0",
     "nyc": "^11.1.0",
     "pg": "^7.0.2",
-    "sqlite3": "^3.1.8",
+    "sqlite3": "^3.1.9",
     "ts-node": "^3.3.0",
     "typescript": "^2.4.2"
   },
   "dependencies": {
+    "@types/mysql2": "types/mysql2",
     "@types/pg": "^6.1.43",
     "@types/sqlite3": "^3.1.0",
     "pluralize": "^6.0.0"
