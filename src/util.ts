@@ -20,3 +20,12 @@ export function getTableName(name: string) {
 export function getForeignKey(name: string) {
     return name.replace(/^_/, "").replace(/(?:^|\.?)([A-Z])/g, (_, x) => "_" + x.toLowerCase()).replace(/^_/, "") + "_id";
 }
+
+/**
+ * Returns the table name for a pivot table between the two specified tables.
+ * This takes the table names of the specified models, then sorts them alphabetically
+ * and joins them with an underscore.
+ */
+export function getPivotTableName(a: string, b: string) {
+    return [getTableName(a), getTableName(b)].sort((a, b) => a.localeCompare(b)).join("_");
+}

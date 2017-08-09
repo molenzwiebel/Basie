@@ -4,6 +4,7 @@ import { expect } from "chai";
 import { Database } from "sqlite3";
 import Basie from "../";
 import BaseModel, { A, R } from "../base-model";
+import QueryBuilder from "../query/builder";
 
 class _User extends BaseModel {
     public name: string;
@@ -12,6 +13,8 @@ class _User extends BaseModel {
 
     public readonly phone: R<Phone> = this.hasOne(Phone);
     public readonly phones: A<Phone> = this.hasMany(Phone);
+
+    public readonly allPhones: A<Phone> = this.hasAndBelongsToMany(Phone);
 }
 const User = Basie.wrap<_User>()(_User);
 type User = _User;
@@ -22,6 +25,8 @@ class _Phone extends BaseModel {
 
     public readonly hasUser: R<User> = this.hasOne(User);
     public readonly user: R<User> = this.belongsTo(User);
+
+    public readonly allUsers: A<User> = this.hasAndBelongsToMany(User);
 }
 const Phone = Basie.wrap<_Phone>()(_Phone);
 type Phone = _Phone;
@@ -32,10 +37,11 @@ class RelationTests {
         let db: Database;
 
         await new Promise(resolve => db = new Database(":memory:", () => resolve()));
-        await new Promise(resolve => db.exec("CREATE TABLE users (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, name TEXT, age INTEGER, phone_id INTEGER)", () => resolve()));
-        await new Promise(resolve => db.exec("CREATE TABLE phones (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, number TEXT, user_id INTEGER)", () => resolve()));
-
         Basie.sqlite(db!);
+
+        await QueryBuilder.execute("CREATE TABLE users (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, name TEXT, age INTEGER, phone_id INTEGER)");
+        await QueryBuilder.execute("CREATE TABLE phones (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, number TEXT, user_id INTEGER)");
+        await QueryBuilder.execute("CREATE TABLE phones_users (user_id INTEGER, phone_id INTEGER)");
     }
 
     async after() {
@@ -84,6 +90,25 @@ class RelationTests {
     }
 
     @test
+    async hasAndBelongsToMany() {
+        await User.insert({ name: "Thijs", age: 17, phone_id: 1 });
+        await User.insert({ name: "Silke", age: 16, phone_id: 1 });
+        await Phone.insert({ number: "123", user_id: 2 });
+        await Phone.insert({ number: "456", user_id: 2 });
+
+        await QueryBuilder.table<{ phone_id: number, user_id: number }>("phones_users").insert({ phone_id: 1, user_id: 1 }, { phone_id: 2, user_id: 1 });
+
+        const user = (await User.first())!;
+        const phones = await user.allPhones();
+        expect(phones.length).to.equal(2);
+        const users = await phones[0].allUsers();
+        expect(users.length).to.equal(1);
+
+        const usersAbove20 = await phones[0].allUsers.where("age", ">=", 20).get();
+        expect(usersAbove20.length).to.equal(0);
+    }
+
+    @test
     async actsAsQueryBuilder() {
         await User.insert({ name: "Thijs", age: 17, phone_id: 1 });
         await Phone.insert({ number: "123", user_id: 1 });
@@ -97,17 +122,10 @@ class RelationTests {
         expect(await user.phone.count()).to.equal(2);
         expect(await allWith3[0].user.pluck("name")).to.deep.equal(["Thijs"]);
 
-        expect(() => {
-            (<any>user.phones).foo;
-        }).to.throw("Invalid QueryBuilder member");
-
-        expect(() => {
-            (<any>user.phone).foo;
-        }).to.throw("Invalid QueryBuilder member");
-
-        expect(() => {
-            (<any>allWith3[0].user).foo;
-        }).to.throw("Invalid QueryBuilder member");
+        expect((<any>user.phone).foo).to.equal(undefined);
+        expect((<any>user.phones).foo).to.equal(undefined);
+        expect((<any>user.allPhones).foo).to.equal(undefined);
+        expect((<any>allWith3[0].user).foo).to.equal(undefined);
     }
 
     @test
@@ -120,6 +138,7 @@ class RelationTests {
 
         expect(await user.phone()).to.equal(await user.phone());
         expect(await user.phones()).to.equal(await user.phones());
+        expect(await user.allPhones()).to.equal(await user.allPhones());
 
         const phone = (await Phone.first())!;
         expect(await phone.user()).to.equal(await phone.user());

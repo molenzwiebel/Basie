@@ -3,7 +3,7 @@
  * just the constructor with some merged definitions that add static methods.
  */
 import QueryBuilder from "./query/builder";
-import { getForeignKey } from "./util";
+import { getForeignKey, getPivotTableName } from "./util";
 
 export type Wrapped<T, A> = T & {
     readonly tableName: string;
@@ -70,7 +70,7 @@ export default abstract class BaseModel {
             },
             get: (obj: any, key) => {
                 const builder: any = model.where(foreignKey || getForeignKey(this.constructor.name), this.id).limit(1);
-                if (typeof builder[key] === "undefined") throw new Error("Invalid QueryBuilder member.");
+                if (typeof builder[key] === "undefined") return undefined;
                 return typeof builder[key] === "function" ? builder[key].bind(builder) : builder[key];
             }
         });
@@ -90,7 +90,7 @@ export default abstract class BaseModel {
             },
             get: (obj: any, key) => {
                 const builder: any = model.where("id", (<any>this)[foreignKey || getForeignKey(model.name)]);
-                if (typeof builder[key] === "undefined") throw new Error("Invalid QueryBuilder member.");
+                if (typeof builder[key] === "undefined") return undefined;
                 return typeof builder[key] === "function" ? builder[key].bind(builder) : builder[key];
             }
         });
@@ -109,7 +109,36 @@ export default abstract class BaseModel {
             },
             get: (obj: any, key) => {
                 const builder: any = model.where(foreignKey || getForeignKey(this.constructor.name), this.id);
-                if (typeof builder[key] === "undefined") throw new Error("Invalid QueryBuilder member.");
+                if (typeof builder[key] === "undefined") return undefined;
+                return typeof builder[key] === "function" ? builder[key].bind(builder) : builder[key];
+            }
+        });
+    }
+
+    /**
+     * Relationship that functions as a hasMany going both ways. This requires a pivot table
+     * which joins the two models together.
+     */
+    public hasAndBelongsToMany<Q, T extends Wrapped<any, Q>>(model: T, pivotName?: string): A<Q> {
+        let instance: Promise<Q[]>;
+
+        const pivot = pivotName || getPivotTableName(this.constructor.name, model.name);
+        const createBuilder = () => {
+            const b = model
+                .join(pivot, `${model.tableName}.id`, "=", `${pivot}.${getForeignKey(model.name)}`)
+                .where(`${pivot}.${getForeignKey(this.constructor.name)}`, this.id);
+            b.modelConstructor = model;
+            return b;
+        };
+
+        return <any>new Proxy(/* istanbul ignore next */ () => {}, {
+            apply: () => {
+                if (instance) return instance;
+                return instance = createBuilder().all();
+            },
+            get: (obj: any, key) => {
+                const builder: any = createBuilder();
+                if (typeof builder[key] === "undefined") return undefined;
                 return typeof builder[key] === "function" ? builder[key].bind(builder) : builder[key];
             }
         });

@@ -103,7 +103,7 @@ class SQLGrammarCompilerTests {
     @test
     compilesNullWheres() {
         compileSelect<{ a: string }>(x => x.whereNull("a"), "SELECT * FROM test WHERE a IS NULL");
-        compileSelect<{ a: string }>(x => x.whereNotNull("a"), "SELECT * FROM test WHERE a IS NOT NULL")
+        compileSelect<{ a: string }>(x => x.whereNotNull("a"), "SELECT * FROM test WHERE a IS NOT NULL");
 
         compileSelect<{ a: string, b: string }>(x =>
             x.whereNull("a").orWhereNull("b")

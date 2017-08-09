@@ -559,18 +559,18 @@ export default class QueryBuilder<T> {
     }
 
     /**
-     * Executes the specified raw query.
-     */
-    public execute(sql: string, args?: any[]): Promise<void> {
-        return Basie.getEngine().query(sql, args || []);
-    }
-
-    /**
      * Used as a helper function to create a new instance of ourselves. Mainly
      * used in nested where/on clauses. Must be overridden by subclasses.
      */
     protected createNew(): this {
         return <this>new QueryBuilder<T>();
+    }
+
+    /**
+     * Executes the specified raw query.
+     */
+    public static execute(sql: string, args?: any[]): Promise<void> {
+        return Basie.getEngine().query(sql, args || []);
     }
 
     /**
