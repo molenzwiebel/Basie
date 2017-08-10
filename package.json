@@ -1,6 +1,6 @@
 {
   "name": "basie",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "author": "Thijs Molendijk (molenzwiebel)",
@@ -14,8 +14,8 @@
   "homepage": "https://github.com/molenzwiebel/basie#readme",
   "keywords": [
     "typescript",
-    "sqlite",
     "basie",
+    "orm",
     "database",
     "persistence"
   ],
@@ -31,20 +31,27 @@
       "src/tests/*"
     ]
   },
-  "dependencies": {
-    "sqlite3": "^3.1.8"
-  },
   "devDependencies": {
-    "@types/chai": "^3.5.0",
-    "@types/sqlite3": "^2.2.33",
-    "chai": "^3.5.0",
-    "cross-env": "^4.0.0",
-    "coveralls": "^2.13.0",
-    "istanbul": "^1.1.0-alpha.1",
-    "mocha": "^3.2.0",
-    "mocha-typescript": "^1.0.23",
-    "nyc": "^10.2.0",
-    "ts-node": "^3.0.2",
-    "typescript": "^2.2.2"
+    "@types/chai": "^4.0.2",
+    "@types/node": "^8.0.19",
+    "@types/pluralize": "^0.0.27",
+    "chai": "^4.1.0",
+    "coveralls": "^2.13.1",
+    "cross-env": "^5.0.2",
+    "istanbul": "^0.4.5",
+    "mocha": "^3.5.0",
+    "mocha-typescript": "^1.1.7",
+    "mysql2": "^1.4.0",
+    "nyc": "^11.1.0",
+    "pg": "^7.0.2",
+    "sqlite3": "^3.1.9",
+    "ts-node": "^3.3.0",
+    "typescript": "^2.4.2"
+  },
+  "dependencies": {
+    "@types/mysql2": "types/mysql2",
+    "@types/pg": "^6.1.43",
+    "@types/sqlite3": "^3.1.0",
+    "pluralize": "^6.0.0"
   }
 }

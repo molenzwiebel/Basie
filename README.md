@@ -1,175 +1,162 @@
 # Basie [![Build Status](https://travis-ci.org/molenzwiebel/Basie.svg?branch=master)](https://travis-ci.org/molenzwiebel/Basie) [![Coverage Status](https://coveralls.io/repos/github/molenzwiebel/Basie/badge.svg)](https://coveralls.io/github/molenzwiebel/Basie) [![npm version](https://badge.fury.io/js/basie.svg)](https://badge.fury.io/js/basie)
 
-A TypeScript package for when you need simple persistence to a database with a fluent querying method and easy-to-understand schemantics. Requires Node 6.4 and TypeScript 2.2 or higher.
+A TypeScript Node package that provides a fluent semi-typesafe SQL query builder akin to the one shipped with Laravel. Supports sqlite (using [sqlite3](https://github.com/mapbox/node-sqlite3)), MySQL (using [mysql2](https://github.com/sidorares/node-mysql2)) and PostgreSQL (using [pg](https://github.com/brianc/node-postgres)). Find the documentation [here](https://docs.molenzwiebel.xyz/basie).
 
 ## Example
 ```typescript
-import { Basie, Based, field } from "basie";
+import Basie, { BaseModel, R, A } from "basie";
 
-abstract class Role extends Basie {
-    @field
-    name: string;
+class _User extends BaseModel {
+    public name: string;
+    public age: number;
 
-    @field("user_id") // custom column name
-    owner: number;
+    public phones: A<Phone> = this.hasMany(Phone);
 }
-const RoleModel = Based(Role);
+const User = Basie.wrap<_User>()(_User);
+type User = _User;
 
-abstract class User extends Basie {
-    @field
-    name: string;
+class _Phone extends BaseModel {
+    public number: string;
+    public user_id: number;
 
-    @field
-    email: string;
-
-    @field
-    age: number;
-
-    @children(model => RoleModel)
-    roles: Role[]; // finds all roles with user_id set to the id of the user.
+    public user: R<User> = this.belongsTo(User);
 }
-const UserModel = Based(User); // table name is "user"
+const Phone = Basie.wrap<_Phone>()(_Phone);
+type Phone = _Phone;
 
-// Get all users:
-const users = await UserModel.all();
+// Fluent querying on objects.
+const allUsersAbove20 = await User.where("age", ">", 20).get();
 
-// Get the user with ID 1
-const myUser = await UserModel.find(1);
+// Complex querying supported:
+const complex = await User.where("age", ">", 20).orWhere(nested => {
+    nested.where("name", "LIKE", "%a%");
+    nested.orWhere("name", "LIKE", "%A%");
+}).limit(10).orderByDesc("age").get();
+// 'SELECT * FROM users WHERE age > ? OR (name LIKE ? OR name LIKE ?) ORDER BY age DESC LIMIT ?'
 
-// Edit the user...
-myUser!.name = "Thijs";
-await myUser!.save();
+// Methods directly on the object.
+const user = new User();
+user.name = "Thijs";
+user.age = 17;
+await user.save(); // inserts
+user.age = 18;
+await user.save(); // updates
+await user.delete(); // deletes
 
-// Or delete it.
-await myUser!.destroy();
-myUser!.name; // This will throw, since the object no longer exists.
+// Lazy relationships.
+const phones = await user.phones();
+console.assert(phones === await user.phones(), "Not lazy");
 
-// Create a new user.
-const newUser = new UserModel();
-newUser.name = "John";
-newUser.email = "john@doe.com";
-newUser.age = 20;
-await newUser.save();
-
-// Find the first user with the specified query (all type safe!):
-const firstMatching = await UserModel.findBy({ age: 20 });
-
-// Or do more advanced queries:
-const allUsersUnder30 = await UserModel.where("age < ?", 30);
+// Allows relationships to be further narrowed down.
+const longPhones = await user.phones.select("LEN(number) as number_length").where("number_length", ">=", 10).get();
+// 'SELECT LEN(number) as number_length FROM phones WHERE user_id = ? AND number_length >= ?'
 ```
 
 ## Features
-- **Fluent querying interface**: Static methods are exposed that allow easy access to the database tables. `Partial` from [TypeScript 2.1](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-1.html) is used to guarantee type-safe `where` querying, and raw SQL queries are also exposed.
-- **Easily managable objects**: Simply call `save()` or `destroy()` on an object to perform the appropriate actions.
-- **Safety where possible**: Deleted objects are "poisoned", preventing you from accidentally using something that no longer exists. `@children` fields are made read-only, to prevent you from accidentally writing to the "snapshot" of the children. If `emitDecoratorMetadata` is turned on, fields are validated to ensure that only valid field types are used.
+- **Fluent Querying Interface**: QueryBuilder is a fluent querying builder interface that attempts to be as type-safe as possible. This means that `where(nonexistentKey, 10)` will fail, and that `where("is_admin", "true")` won't compile if `is_admin` is supposed to be a boolean.
+- **Easily Managable Objects**: Simply call `save()` and `delete()` on objects to either insert, update or delete the specific model.
 
 ## Limitations
-- **Only supports an SQLite database**. Since Basie was built for a simple way to add persistence, SQLite was chosen since it does not require a separate database process.
-- **Only string, number and boolean fields are supported**. Since Basie also works without enabling `emitDecoratorMetadata`, it doesn't know about the types of the fields and hence cannot perform automatic conversion. Basie only supports the types that SQLite supports. Custom getters/setters can be added that perform this conversion manually (see getting started).
-- **One-to-many (@children) is read-only**. Writing to the children array and then saving the "owner" object doesn't propagate changes to the children. This was done to reduce code size, and any attempt to write to the children is blocked where possible.
-- **Fixed id name and type**: Every Basie model has an `id` field of type `INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE`. This was done to make easier assumptions about the state of the object.
-- **Not optimized for speed**: Since SQLite queries are cheap anyway, no large efforts are made to ensure that as little queries as possible are made. Each additional `@children` field adds a single query to be performed when loading the object (`Model.all()` where model has a single child field results in `1 + row_count * 1` queries). Queries are parallelized where possible.
-- **Limited set of exposed queries**: Only `SELECT`, `UPDATE`, `CREATE TABLE`, `DROP TABLE`, and `SELECT COUNT(*)` queries are exposed. For all others, the raw `Database` class must be used.
-- **Limited set of options**: Only the column name of a `@field` can be changed. There are no options for default values or nullable columns.
-
-## Installation
-First, install Basie using `npm install --save basie` (or `yarn add basie`). Also ensure that you have `experimentalDecorators` set to `true` in your `tsconfig.json`.
-Basie does not require the `emitDecoratorMetadata` option, unless you want Basie to automatically create tables for you. If `emitDecoratorMetadata` is off and you attempt to call `Model.createTable()`, this will throw with the appropriate info.
-
-Basie can tap into existing databases just fine. Simply connect to the appropriate database. If you want to create a new database if it does not yet exist, it is recommended to simply call `Model.createTable()` at startup (since this is a no-op if the table already exists).
+- **Only string, boolean and number fields are supported.** Basie does not actually query your database for the scheme, so it doesn't know the types of your database columns. Only strings, numbers and booleans will be converted properly. For all other values, you can use custom getters and setters to wrap a value.
+- **Does not create tables.** Basie only queries tables and simply assumes that your model matches the database layout.
+- **Tables are required to have an id column.** Basie tracks documents by their id, and it does not support changing the name or type of the ID column.
+- **Relations are read-only.** You have to manually fiddle with id columns to change relationships.
 
 ## Usage
-For a complete overhead of which methods are supported, it is recommended that you check out the extensive documentation in `types.ts`: [https://github.com/molenzwiebel/Basie/blob/master/src/types.ts](https://github.com/molenzwiebel/Basie/blob/master/src/types.ts). The next few sections describe some common usecases and gotchas.
+For a complete overhead view of all methods available, it is recommended you check out [the documentation](https://docs.molenzwiebel.xyz/basie). The next few sections describe some common usecases and gotchas.
 
-### Configuring the database
-The database first needs to be configured before any queries can be made. This is as easy as simply calling `Database.connect` before your first access to the database:
+### Configuring the Database
+Basie supports SQLite, MySQL and PostgreSQL. Simply import the static Basie instance and call the appropriate method to configure Basie to use that database:
 ```typescript
-import { Database } from "basie";
+import Basie from "basie";
 
-// The database will be created if it doesn't exist.
-await Database.connect("./path_to_database.db");
+// SQLite.
+import { Database } from "sqlite3";
+const db = new Database("path_to_database.db", error => {
+    if (error) throw new Error(); // handle error.
+    Basie.sqlite(db);
+});
 
-// Should you want to swap databases at runtime.
-await Database.close();
+// MySQL
+import * as mysql from "mysql2";
+const connection = await mysql.createConnection(<any>{
+    user: databaseUsername,
+    password: databasePassword,
+    database: databaseName,
+    host: databaseHost,
+    port: databasePort,
+    decimalNumbers: true // recommended to ensure that you receive numbers as numbers instead of strings
+});
+Basie.mysql(connection);
+
+// PostgreSQL
+import * as pg from "pg";
+const pool = new pg.Pool({
+    user: databaseUsername,
+    password: databasePassword,
+    database: databaseName,
+    host: databaseHost,
+    port: databasePort,
+    max: 10,
+    idleTimeoutMillis: 30000
+});
+pg.types.setTypeParser(20, parseInt); // convert strings to numbers (int8)
+pg.types.setTypeParser(1700, parseFloat); // convert decimal strings to numbers (numeric)
+Basie.postgres(pool);
 ```
 
-### Simple Models
-If you only require simple fields to be present, simply creating an abstract class that extends `Basie` and marking the appropriate fields with `@field` is enough:
+### Models, Methods and Computed Properties
+Your models are simple TypeScript classes, which means that they support methods and computed properties. Basie will ensure that whenever a model instance gets loaded from the database, it will have the appropriate prototype.
 ```typescript
-// Extending basie adds the definitions for save() and destroy().
-abstract class User extends Basie {
-    // readonly id: number; is implicitly added
+class _User extends BaseModel {
+    public name: string;
+    public lastChangeTimestamp: number;
 
-    // stored as `name TEXT`
-    @field
-    name: string;
-
-    // stored as `differentColumnName REAL`
-    @field("differentColumnName")
-    age: number;
-}
-const UserModel = Based(User); // Based(User, "tableName") can be used for a custom table name.
-```
-
-At this point, `UserModel.find/all/first/where/findBy/count` can be used to query the database. `UserModel.createTable` can be used to create the table, if decorator metadata is enabled. Since `User` is abstract, `new UserModel()` is needed to create an instance (contrary to expectations though, this constructor call will return an instance of `User`, _not_ `UserModel`). As a rule of thumb, `UserModel` is used to create or query objects, while instances of `User` can manipulate a row.
-
-### Methods and Computed Properties
-Since the abstract class is still a normal TypeScript class, any methods can be added, as well as properties that are not saved to the database:
-```typescript
-abstract class User extends Basie {
-    @field
-    name: string;
-
-    @field
-    lastChangeTimestamp: number;
-
-    // No date fields are supported, but you can add the conversion manually.
     get lastChange(): Date {
         return new Date(this.lastChangeTimestamp);
     }
 
-    set lastChange(value: Date) {
-        this.lastChangeTimestamp = value.getTime();
+    set lastChange(newDate: Date) {
+        this.lastChangeTimestamp = newDate.getTime();
     }
 
     greet() {
         console.log("Hello, I'm " + this.name);
     }
 }
+const User = Basie.wrap<_User>()(_User);
+type User = _User;
 ```
-Both the computed property and the `greet()` method will work as expected.
 
-### One-to-many relations
-Basie supports the `one -> many` side of a one-to-many (`has_many` in rails) relation. The `many -> one` direction is deliberately not implemented, since this would either require lazy loading, or would end up in an infinite loop (parent would load children, who would each load the parent, who would then load the children ad infinitum). Solving the loop would be possible for trivial cases, but this requires too much boilerplate for something that isn't too important (rarely does one need to get the parent without already having a reference to it). Also notable is that the children array is a snapshot of the other table when the row was queried, and as such is read-only and doesn't automatically update. The `@children` annotation takes a reference to the child model, as well as an optional foreign key:
+### Relations
+For a full overview of all relations, please check the [documentation](https://docs.molenzwiebel.xyz/basie). Relations work similar to how Laravel's Eloquent handles relations. Do note that foreign keys will need to be present on objects.
+
 ```typescript
-abstract class Role extends Basie {
-    @field("user_id")
-    owner: number; // id of the owner
+import Basie, { BaseModel, A, R } from "basie";
 
-    doSomething() {
-        console.log("Boop");
-    }
+class _User extends BaseModel {
+    public name: string;
+    public age: number;
+
+    public readonly phones: A<Phone> = this.hasMany(Phone);
 }
-const RoleModel = Based(Role);
+const User = Basie.wrap<_User>()(_User);
+type User = _User;
 
-abstract class User extends Basie {
-    @children(model => RoleModel)
-    roles: Role[];
+class _Phone extends BaseModel {
+    public number: string;
+    public user_id: number;
+
+    public readonly user: R<User> = this.belongsTo(User);
 }
-const UserModel = Based(User);
+const Phone = Basie.wrap<_Phone>()(_Phone);
+type Phone = _Phone;
+```
 
-const user = await UserModel.first();
-user.roles[0].doSomething(); // works as expected
-console.log(user.id === user.roles[0].owner); // true
-
-const len = user.roles.length;
-
-const newRole = new RoleModel();
-newRole.owner = user.id;
-await newRole.save();
-
-console.log(len === user.roles.length); // true, user.roles is a snapshot and doesn't automatically update.
-user.roles.push(new RoleModel()); // throws, user.roles is a snapshot and changes are not reflected.
+Relations are lazy and return a promise. Calling a relation without `()` will instead return a query builder that can be refined further:
+```typescript
+const phones = await user.phones(); // Phone.where("user_id", user.id).all()
+const phoneQueryBuilder = user.phones; // Phone.where("user_id", user.id). Can be further refined.
 ```
 
 ## Development
